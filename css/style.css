@@ -144,6 +144,13 @@ body.wordlist-mode .highlight-green {
   color: inherit;      /* avoid white text on yellow */
 }
 
+body.wordlist-mode .word {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+
 /* ---------- Forms & buttons ------------------------------------------ */
 #userForm,
 #levelSelect {
