@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thai Eye-Tracking Reader</title>
+
+  <!-- Core styles -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <!-- Gaze-position cursor -->
+  <div id="tracker" aria-hidden="true"></div>
+  <div id="fixDot"></div>   <!-- NEW -->
+
+  <!-- Calibration / session messages -->
+  <div id="instructions">
+    โปรดคลิกจุดสีแดงแต่ละจุด 3 ครั้งเพื่อตั้งค่าการสอบเทียบ
+  </div>
+  <div id="progress"></div>
+  <div id="centerDot" aria-hidden="true"></div>
+  <div id="accuracy"></div>
+
+
+  <!-- Sentence display -->
+  <div id="thaiSentence"></div>
+
+  <!-- Controls -->
+  <button id="recalBtn" type="button">🔄 Re-calibrate</button>
+
+  <!-- Participant name form -->
+  <form id="userForm">
+    <label>
+      กรุณาใส่ชื่อ:
+      <input type="text" id="userName" autocomplete="off" />
+    </label>
+    <button type="button" id="submitNameBtn">ยืนยัน</button>
+  </form>
+
+  <!-- Level selection -->
+  <div id="levelSelect">
+    <p>เลือกระดับ:</p>
+    <button type="button" data-level="ป1">ป.1</button>
+    <button type="button" data-level="ป2">ป.2</button>
+    <button type="button" data-level="ป3">ป.3</button>
+  </div>
+
+  <div id="finalScreen" class="overlay" style="display:none">
+    ✔️ ข้อมูลถูกบันทึกเรียบร้อยแล้ว ขอบคุณสำหรับความร่วมมือ.
+  </div>
+
+  <!-- Libraries & entry point -->
+  <script src="libs/webgazer.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadAid</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+    }
+    #container {
+      max-width: 95vw;
+      padding: 20px;
+      text-align: center;
+      line-height: 2;
+      display: none;
+    }
+    #readingText span {
+      padding: 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin: 6px;
+      font-size: 5em;
+    }
+    .highlighted {
+      background-color: yellow;
+    }
+    .gaze-on {
+      background-color: lightgreen;
+    }
+    .calibration-dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: red;
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      cursor: pointer;
+      opacity: 1;
+      transition: opacity 0.3s;
+    }
+    #calibration-instruction {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.5em;
+      color: darkred;
+    }
+    #exportButton {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 1em;
+      padding: 8px 12px;
+      z-index: 10000;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="calibration-instruction">คลิกที่จุดเพื่อสอบเทียบ (รอบ 1/3, จุด 1/16)</div>
+  <button id="exportButton" style="display:none;">Export Gaze Data</button>
+
+  <div id="container">
+    <div id="readingText">
+      <span id="word0">ช้าง</span>
+      <span id="word1">เดิน</span>
+      <span id="word2">ผ่าน</span>
+      <span id="word3">ทุ่งหญ้า</span>
+      <span id="word4">สูง</span>
+      <span id="word5">อย่าง</span>
+      <span id="word6">ช้าๆ</span>
+    </div>
+  </div>
+
+  <audio id="pingSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+  <script>
+    // generate a 4×4 grid from 5% to 95% of the screen
+    const margin = 0.05;
+    const gridCount = 4;
+    const calibrationPoints = [];
+    for (let iy = 0; iy < gridCount; iy++) {
+      for (let ix = 0; ix < gridCount; ix++) {
+        const x = margin + ix * (1 - 2 * margin) / (gridCount - 1);
+        const y = margin + iy * (1 - 2 * margin) / (gridCount - 1);
+        calibrationPoints.push([x, y]);
+      }
+    }
+
+    const totalRounds = 3;
+    let round = 0;
+    let pointIndex = 0;
+    const dot = document.createElement('div');
+    dot.className = 'calibration-dot';
+    document.body.appendChild(dot);
+
+    function updateInstruction() {
+      document.getElementById('calibration-instruction').innerText =
+        `คลิกที่จุดเพื่อสอบเทียบ (รอบ ${round + 1}/${totalRounds}, จุด ${pointIndex + 1}/${calibrationPoints.length})`;
+    }
+
+    function showCalibrationDot() {
+      const [xRatio, yRatio] = calibrationPoints[pointIndex];
+      dot.style.left = `${xRatio * window.innerWidth}px`;
+      dot.style.top = `${yRatio * window.innerHeight}px`;
+      dot.style.opacity = '1';
+      updateInstruction();
+    }
+
+    dot.addEventListener('click', (event) => {
+      webgazer.recordScreenPosition(event.clientX, event.clientY, event);
+      dot.style.opacity = '0.3';
+
+      pointIndex++;
+      if (pointIndex >= calibrationPoints.length) {
+        pointIndex = 0;
+        round++;
+      }
+
+      if (round >= totalRounds) {
+        dot.remove();
+        document.getElementById('calibration-instruction').remove();
+        setTimeout(() => {
+          webgazer.getCurrentPrediction().then(prediction => {
+            let msg = "Accuracy could not be determined.";
+            if (prediction && prediction.x && prediction.y) {
+              const dx = prediction.x - window.innerWidth / 2;
+              const dy = prediction.y - window.innerHeight / 2;
+              const dist = Math.sqrt(dx*dx + dy*dy);
+              const maxDist = Math.sqrt(window.innerWidth**2 + window.innerHeight**2) / 2;
+              const percent = Math.max(0, 100 - (dist / maxDist * 100)).toFixed(1);
+              msg = `Calibration complete!\nEstimated accuracy: ${percent}%`;
+            }
+            alert(msg);
+            document.getElementById('container').style.display = 'block';
+            document.getElementById('exportButton').style.display = 'block';
+          });
+        }, 1000);
+      } else {
+        setTimeout(showCalibrationDot, 300);
+      }
+    });
+
+    showCalibrationDot();
+
+    // -----------------------------------------
+    // Gaze interaction logic (unchanged)...
+    const wordElements = document.querySelectorAll('#readingText span');
+    const ping = document.getElementById('pingSound');
+    let lastWordIndex = null;
+    let focusStart = null;
+    let pingedWords = new Set();
+    let recentPoints = [];
+    let lastHovered = null;
+    let lastUpdate = 0;
+    let thaiVoice = null;
+    window.speechSynthesis.onvoiceschanged = () => {
+      thaiVoice = speechSynthesis.getVoices().find(v => v.lang === 'th-TH');
+    };
+    function speakWord(word) {
+      const utter = new SpeechSynthesisUtterance(word);
+      utter.lang = 'th-TH';
+      if (thaiVoice) utter.voice = thaiVoice;
+      speechSynthesis.speak(utter);
+    }
+    function smoothGaze(x, y) {
+      recentPoints.push({ x, y });
+      if (recentPoints.length > 5) recentPoints.shift();
+      const avgX = recentPoints.reduce((a,b)=>a+b.x,0)/recentPoints.length;
+      const avgY = recentPoints.reduce((a,b)=>a+b.y,0)/recentPoints.length;
+      return { x: avgX, y: avgY };
+    }
+    function getWordUnderGaze(x, y) {
+      for (let i = 0; i < wordElements.length; i++) {
+        const rect = wordElements[i].getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          return i;
+        }
+      }
+      return null;
+    }
+    function clearHighlights() {
+      wordElements.forEach(el => el.classList.remove('gaze-on','highlighted'));
+    }
+    const rawGazeLog = [];
+    webgazer.setGazeListener((data, timestamp) => {
+      if (!data) return;
+      rawGazeLog.push({ x: data.x.toFixed(1), y: data.y.toFixed(1), t: Math.round(timestamp) });
+      if (timestamp - lastUpdate < 50) return;
+      lastUpdate = timestamp;
+      const sm = smoothGaze(data.x, data.y);
+      const wi = getWordUnderGaze(sm.x, sm.y);
+      if (wi !== lastHovered) {
+        clearHighlights();
+        if (wi !== null) wordElements[wi].classList.add('gaze-on');
+        lastHovered = wi;
+      }
+      if (wi !== null) {
+        if (!pingedWords.has(wi)) {
+          ping.currentTime = 0; ping.play();
+          pingedWords.add(wi);
+        }
+        if (wi === lastWordIndex) {
+          if (!focusStart) focusStart = performance.now();
+          if (performance.now() - focusStart > 2000) {
+            wordElements[wi].classList.replace('gaze-on','highlighted');
+            speakWord(wordElements[wi].innerText);
+            focusStart = null;
+            pingedWords.delete(wi);
+          }
+        } else {
+          lastWordIndex = wi;
+          focusStart = performance.now();
+        }
+      } else {
+        lastWordIndex = null;
+        focusStart = null;
+        pingedWords.clear();
+      }
+    }).begin();
+
+    document.getElementById('exportButton').addEventListener('click', () => {
+      const rows = ["x,y,t"];
+      rawGazeLog.forEach(p=>rows.push(`${p.x},${p.y},${p.t}`));
+      const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gaze_data.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>

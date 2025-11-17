@@ -1,0 +1,191 @@
+/* =======================================================================
+   Thai Eye-Tracking Reader – global stylesheet
+   =======================================================================*/
+
+/* ---------- Global reset / helpers ----------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial,
+    Helvetica, sans-serif;
+  text-align: center;
+  overflow: hidden; /* lock scroll so gaze coordinates stay valid */
+  background: #ffffff;
+}
+
+/* ---------- Real-time gaze cursor ------------------------------------ */
+#tracker {
+  width: 20px;
+  height: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: red;
+  pointer-events: none;
+  z-index: 10;
+  transition: top 0.1s linear, left 0.1s linear;
+}
+
+/* ---------- Calibration UI ------------------------------------------- */
+.calibration {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  border-radius: 50%;
+  background: red;
+  cursor: pointer;
+  opacity: 0.7;
+  z-index: 5;
+}
+
+/* Blue dot shown while measuring accuracy */
+#centerDot {
+  width: 20px;
+  height: 20px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: blue;
+  display: none;
+  z-index: 6;
+}
+
+/* ---------- Textual feedback lines ----------------------------------- */
+#instructions {
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#progress {
+  margin-top: 6px;
+  font-size: 20px;
+}
+
+#accuracy {
+  margin-top: 10px;
+  font-size: 24px;
+  color: green;
+}
+
+/* ---------- Sentence presentation ------------------------------------ */
+#thaiSentence {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-weight: bold;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none; /* becomes flex after metadata entry */
+}
+
+/* fixation dot ------------------------------------------------------- */
+#fixDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: black;
+  position: fixed;
+  top: 50%;                     /* will stay centre-height */
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  display: none;                /* shown by JS */
+}
+
+/* Individual word spans */
+.word {
+  display: inline-block;
+  padding: 0 10px;
+  margin: 0 20px; /* JS trims this margin for higher grades */
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+/* hide element without removing it from layout */
+.hidden {
+  display: none;
+}
+
+.hide-cursor {
+  cursor: none;
+}
+
+/* Highlight colours driven by gaze stability */
+.highlight-yellow {
+  background: yellow;
+}
+
+.highlight-green {
+  background: limegreen;
+  color: #ffffff;
+}
+
+/* Wordlist experiment: visually disable green highlight (keep logic) */
+body.wordlist-mode .highlight-green {
+  background: yellow;  /* same as yellow highlight */
+  color: inherit;      /* avoid white text on yellow */
+}
+
+/* ---------- Forms & buttons ------------------------------------------ */
+#userForm,
+#levelSelect {
+  display: none;
+  margin-top: 20px;
+}
+
+#userForm input {
+  font-size: 18px;
+  padding: 4px 6px;
+}
+
+#userForm button,
+#levelSelect button,
+#recalBtn {
+  font-size: 18px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+/* Re-calibration shortcut */
+#recalBtn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 11;
+  display: none;
+}
+
+/* ---------- Responsive tweaks ---------------------------------------- */
+@media (max-width: 480px) {
+  .word {
+    margin: 0 10px;
+    padding: 0 6px;
+  }
+
+  #instructions,
+  #progress {
+    font-size: 18px;
+  }
+
+  #accuracy {
+    font-size: 20px;
+  }
+}
